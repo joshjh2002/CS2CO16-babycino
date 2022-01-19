@@ -189,7 +189,7 @@ public class CGenerator implements MachineGenerator {
                 // Not used, as we never generate it for MiniJava programs.
                 return "    " + r1 + ".n = -1; scanf(\"%d\", &" + r1 + ".n);";
             case WRITE:
-                return "    " + "printf(\"%d\\n\", " + r1 + ");";
+                return "    " + "printf(\"%d\\n\", " + r1 + ".n);";
             case ADDROF:
                 // Address-of (&) in C works for functions, but not goto labels.
                 // This only works because the TAC we generate only takes the
