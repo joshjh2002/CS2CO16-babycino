@@ -1,4 +1,4 @@
-Babycino v0.4
+Babycino v0.5
 =============
 
 This is a minimal compiler for MiniJava, a subset of Java used in the book
@@ -129,6 +129,8 @@ under a BSD-like licence.
 Changelog
 ---------
 
+* Version 0.5: Minor bugfix for 2021-22 academic year.
+  - CGenerator: Actually use correct union field for printing ints.
 * Version 0.4: More improvements for 2020-21 academic year.
   - Examples: Programs for suggested extra features added in progs/features/.
   - General: Some assertions changed into exceptions, so that they will
