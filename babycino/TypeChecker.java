@@ -21,7 +21,7 @@ public class TypeChecker extends MiniJavaBaseListener {
 
     // Stack of unprocessed types, corresponding to checked subexpressions.
     private Stack<Type> types;
-    
+
     public TypeChecker(SymbolTable sym) {
         this.sym = sym;
         this.method = null;
@@ -49,12 +49,12 @@ public class TypeChecker extends MiniJavaBaseListener {
             System.exit(1);
         }
     }
-    
+
     @Override
     public void enterClassDeclaration(MiniJavaParser.ClassDeclarationContext ctx) {
         this.current = this.sym.get(ctx.identifier(0).getText());
     }
-    
+
     @Override
     public void exitClassDeclaration(MiniJavaParser.ClassDeclarationContext ctx) {
         this.current = null;
@@ -70,7 +70,7 @@ public class TypeChecker extends MiniJavaBaseListener {
         Type t = this.types.pop();
         Type ret = this.method.getReturnType();
         this.check(ret.compatibleWith(t), ctx, "Return type of " + this.method.getQualifiedName() +
-            " expected to be compatible with " + ret + "; actual type: " + t);
+                " expected to be compatible with " + ret + "; actual type: " + t);
         this.method = null;
 
         // It is a fatal error if somehow not all types on the stack are used.
@@ -104,13 +104,13 @@ public class TypeChecker extends MiniJavaBaseListener {
         Type t = this.types.pop();
         this.check(t.isInt(), ctx, "Expected argument of println to be int; actual type: " + t);
     }
-    
+
     @Override
     public void exitStmtAssign(MiniJavaParser.StmtAssignContext ctx) {
         Type lhs = this.identifierType(ctx.identifier());
         Type rhs = this.types.pop();
         this.check(lhs.compatibleWith(rhs), ctx, "Assignment of value of type "
-            + rhs + " to variable of incompatible type " + lhs);
+                + rhs + " to variable of incompatible type " + lhs);
     }
 
     @Override
@@ -149,15 +149,24 @@ public class TypeChecker extends MiniJavaBaseListener {
                 this.check(lhs.isBoolean(), ctx, "Expected boolean as 1st argument to &&; actual type: " + lhs);
                 this.check(rhs.isBoolean(), ctx, "Expected boolean as 2nd argument to &&; actual type: " + rhs);
                 break;
+            case "!=":
+                // != must have 2 arguments that are both booleans or both integers.
+                if (!((lhs.isBoolean() && rhs.isBoolean()) || (lhs.isInt() && rhs.isInt()))) {
+
+                    this.check(false, ctx,
+                            "Both arguments must be either boolean or integer; lhs: " + lhs + "   rhs: " + rhs);
+                }
+                break;
             default:
                 this.check(lhs.isInt(), ctx, "Expected int as 1st argument to " + op + "; actual type: " + lhs);
                 this.check(rhs.isInt(), ctx, "Expected int as 2nd argument to " + op + "; actual type: " + rhs);
                 break;
         }
-        
+
         switch (op) {
             // Only AND and less-than return booleans;
             // all other operations return ints.
+            case "!=": // Added case to check for != and return that as a boolean
             case "&&":
             case "<":
                 this.types.push(new Type(Kind.BOOLEAN));
@@ -191,7 +200,7 @@ public class TypeChecker extends MiniJavaBaseListener {
 
         // Discard the null marker.
         this.types.pop();
-        
+
         // Find out what the signature of the method is.
         Type lhs = args.pop();
         if (!lhs.isObject()) {
@@ -206,16 +215,17 @@ public class TypeChecker extends MiniJavaBaseListener {
             this.types.push(new Type(this.sym.get("Object")));
             return;
         }
-        
+
         // Store the static type of the object for code generation.
         this.sym.setStaticType(ctx, lhs);
-        
-        // Iterate through args and method's params. Check length matches. Check types compatible.
+
+        // Iterate through args and method's params. Check length matches. Check types
+        // compatible.
         Set<Map.Entry<String, Type>> params = target.getParams();
         if (!(params.size() == args.size())) {
             this.error(ctx, "Method " + target.getQualifiedName() + " has " +
-                params.size() + " parameter(s); " + "method call has " +
-                args.size() + " parameter(s).");
+                    params.size() + " parameter(s); " + "method call has " +
+                    args.size() + " parameter(s).");
             this.types.push(new Type(this.sym.get("Object")));
             return;
         }
@@ -223,8 +233,8 @@ public class TypeChecker extends MiniJavaBaseListener {
         for (Map.Entry<String, Type> param : params) {
             Type argType = args.pop();
             this.check(param.getValue().compatibleWith(argType), ctx,
-                "Argument of type " + argType + " incompatible with parameter "
-                + param.getKey() + " of type " + param.getValue() + ".");
+                    "Argument of type " + argType + " incompatible with parameter "
+                            + param.getKey() + " of type " + param.getValue() + ".");
         }
 
         // The type of the whole expression comes from the method's return type.
@@ -240,10 +250,10 @@ public class TypeChecker extends MiniJavaBaseListener {
     public void exitExpArrayIndex(MiniJavaParser.ExpArrayIndexContext ctx) {
         Type index = this.types.pop();
         Type arr = this.types.pop();
-        
+
         this.check(arr.isIntArray(), ctx, "Expected int[] for target of array lookup; actual type: " + arr);
         this.check(index.isInt(), ctx, "Expected int for index in array lookup; actual type: " + index);
-        
+
         this.types.push(new Type(Kind.INT));
     }
 
@@ -330,4 +340,3 @@ public class TypeChecker extends MiniJavaBaseListener {
     }
 
 }
-
