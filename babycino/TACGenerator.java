@@ -90,7 +90,7 @@ public class TACGenerator extends MiniJavaBaseVisitor<TACBlock> {
         for (MiniJavaParser.StatementContext s : ctx.statement()) {
             result.addAll(this.visit(s));
         }
-        
+
         return result;
     }
 
@@ -102,7 +102,7 @@ public class TACGenerator extends MiniJavaBaseVisitor<TACBlock> {
         String labelElse = this.genlab();
         TACBlock ifFalse = this.visit(ctx.statement(1));
         String labelEnd = this.genlab();
-        
+
         result.addAll(expr);
         result.add(TACOp.jz(expr.getResult(), labelElse));
         result.addAll(ifTrue);
@@ -110,7 +110,7 @@ public class TACGenerator extends MiniJavaBaseVisitor<TACBlock> {
         result.add(TACOp.label(labelElse));
         result.addAll(ifFalse);
         result.add(TACOp.label(labelEnd));
-        
+
         return result;
     }
 
@@ -121,17 +121,17 @@ public class TACGenerator extends MiniJavaBaseVisitor<TACBlock> {
         TACBlock expr = this.visit(ctx.expression());
         TACBlock body = this.visit(ctx.statement());
         String labelEnd = this.genlab();
-        
+
         result.add(TACOp.label(labelStart));
         result.addAll(expr);
         result.add(TACOp.jz(expr.getResult(), labelEnd));
         result.addAll(body);
         result.add(TACOp.jmp(labelStart));
         result.add(TACOp.label(labelEnd));
-        
+
         return result;
     }
-    
+
     @Override
     public TACBlock visitStmtPrint(MiniJavaParser.StmtPrintContext ctx) {
         TACBlock result = new TACBlock();
@@ -139,7 +139,7 @@ public class TACGenerator extends MiniJavaBaseVisitor<TACBlock> {
 
         result.addAll(expr);
         result.add(TACOp.write(expr.getResult()));
-        
+
         return result;
     }
 
@@ -156,20 +156,18 @@ public class TACGenerator extends MiniJavaBaseVisitor<TACBlock> {
         if (this.method.hasVar(id)) {
             // Variable is stored in vl register.
             result.add(TACOp.mov("vl" + this.method.getVarIndex(id), expr.getResult()));
-        }
-        else if (this.current.hasAnyVar(id)) {
+        } else if (this.current.hasAnyVar(id)) {
             // Variable is stored in memory, indexed by this (vl0).
             String dest = this.genreg();
             String idx = this.genreg();
             result.add(TACOp.immed(idx, this.current.getVarIndex(id)));
             result.add(TACOp.offset(dest, "vl0", idx));
             result.add(TACOp.store(dest, expr.getResult()));
-        }
-        else {
+        } else {
             System.err.println("Unrecognised variable: " + id);
             throw new InternalError();
         }
-        
+
         return result;
     }
 
@@ -195,7 +193,7 @@ public class TACGenerator extends MiniJavaBaseVisitor<TACBlock> {
         result.add(TACOp.offset(int0, base.getResult(), one));
         result.add(TACOp.offset(dest, int0, index.getResult()));
         result.add(TACOp.store(dest, expr.getResult()));
-        
+
         return result;
     }
 
@@ -217,7 +215,7 @@ public class TACGenerator extends MiniJavaBaseVisitor<TACBlock> {
 
         result.addAll(expr);
         result.add(TACOp.load(res, expr.getResult()));
-        
+
         return result;
     }
 
@@ -240,8 +238,10 @@ public class TACGenerator extends MiniJavaBaseVisitor<TACBlock> {
             result.add(TACOp.mov(res, expr2.getResult()));
             result.add(TACOp.label(end));
 
-            result.setResult(res);            
+            result.setResult(res);
             return result;
+        } else if (op.equals("!=")) { // Feature to add
+
         }
 
         // Generate the correct code for the operation.
@@ -249,7 +249,7 @@ public class TACGenerator extends MiniJavaBaseVisitor<TACBlock> {
         result.addAll(expr1);
         result.addAll(expr2);
         result.add(TACOp.binop(this.genreg(), expr1.getResult(), expr2.getResult(), n));
-        
+
         return result;
     }
 
@@ -283,7 +283,7 @@ public class TACGenerator extends MiniJavaBaseVisitor<TACBlock> {
         Class receiver = this.sym.getStaticType(ctx).getObject();
         String methodName = ctx.identifier().getText();
         int methodIdx = receiver.getAnyMethodIndex(methodName);
-        
+
         result.add(TACOp.load(vtbl, results.get(0))); // vtbl = [obj]
         result.add(TACOp.immed(idx, methodIdx));
         result.add(TACOp.offset(method, vtbl, idx)); // method = [obj] + idx
@@ -297,7 +297,7 @@ public class TACGenerator extends MiniJavaBaseVisitor<TACBlock> {
         // Make the call and save the result.
         result.add(TACOp.call(dst));
         result.add(TACOp.mov(res, "r0"));
-        
+
         return result;
     }
 
@@ -307,7 +307,7 @@ public class TACGenerator extends MiniJavaBaseVisitor<TACBlock> {
         result.add(TACOp.immed(this.genreg(), 0));
         return result;
     }
-    
+
     @Override
     public TACBlock visitExpArrayIndex(MiniJavaParser.ExpArrayIndexContext ctx) {
         TACBlock result = new TACBlock();
@@ -317,7 +317,7 @@ public class TACGenerator extends MiniJavaBaseVisitor<TACBlock> {
         String int0 = this.genreg();
         String src = this.genreg();
         String res = this.genreg();
-        
+
         result.addAll(array);
         result.addAll(index);
 
@@ -325,24 +325,24 @@ public class TACGenerator extends MiniJavaBaseVisitor<TACBlock> {
         result.add(TACOp.offset(int0, array.getResult(), one));
         result.add(TACOp.offset(src, int0, index.getResult()));
         result.add(TACOp.load(res, src));
-        
+
         return result;
     }
-    
+
     @Override
     public TACBlock visitExpNewObject(MiniJavaParser.ExpNewObjectContext ctx) {
         TACBlock result = new TACBlock();
         String size = this.genreg();
         String res = this.genreg();
-        
+
         Class c = sym.get(ctx.identifier().getText());
 
-        // Allocate a block of memory.        
+        // Allocate a block of memory.
         result.add(TACOp.immed(size, c.size()));
         result.add(TACOp.malloc(res, size));
         // Set the 1st word to be the vtable of the object's class.
         result.add(TACOp.store(res, "vg" + c.getClassIndex()));
-        
+
         return result;
     }
 
@@ -353,7 +353,7 @@ public class TACGenerator extends MiniJavaBaseVisitor<TACBlock> {
         String size = this.genreg();
         String one = this.genreg();
         String res = this.genreg();
-        
+
         // Size of memory block to allocate is length of array + 1.
         result.addAll(expr);
         result.add(TACOp.immed(one, 1));
@@ -361,7 +361,7 @@ public class TACGenerator extends MiniJavaBaseVisitor<TACBlock> {
         result.add(TACOp.malloc(res, size));
         // 1st word in block stores length of array.
         result.add(TACOp.store(res, expr.getResult()));
-        
+
         return result;
     }
 
@@ -372,7 +372,7 @@ public class TACGenerator extends MiniJavaBaseVisitor<TACBlock> {
         String labelFalse = this.genlab();
         String labelEnd = this.genlab();
         String res = this.genreg();
-        
+
         result.addAll(expr);
         result.add(TACOp.jz(expr.getResult(), labelFalse));
         result.add(TACOp.immed(res, 0));
@@ -381,7 +381,7 @@ public class TACGenerator extends MiniJavaBaseVisitor<TACBlock> {
         result.add(TACOp.immed(res, 1));
         result.add(TACOp.label(labelEnd));
         result.setResult(res);
-        
+
         return result;
     }
 
@@ -390,7 +390,7 @@ public class TACGenerator extends MiniJavaBaseVisitor<TACBlock> {
         // Grouping just changes the order of parsing, so no need to generate code.
         return this.visit(ctx.expression());
     }
-    
+
     @Override
     public TACBlock visitExpLocalVar(MiniJavaParser.ExpLocalVarContext ctx) {
         return this.lookupIdentifier(ctx.identifier());
@@ -415,8 +415,7 @@ public class TACGenerator extends MiniJavaBaseVisitor<TACBlock> {
             // Variable is stored in vl register.
             // No need to generate any code; just return the register.
             result.setResult("vl" + this.method.getVarIndex(id));
-        }
-        else if (this.current.hasAnyVar(id)) {
+        } else if (this.current.hasAnyVar(id)) {
             // Variable is stored in memory, indexed by this (vl0).
             String idx = this.genreg();
             String field = this.genreg();
@@ -424,8 +423,7 @@ public class TACGenerator extends MiniJavaBaseVisitor<TACBlock> {
             result.add(TACOp.immed(idx, this.current.getVarIndex(id)));
             result.add(TACOp.offset(field, "vl0", idx));
             result.add(TACOp.load(res, field));
-        }
-        else {
+        } else {
             System.err.println("Unrecognised variable: " + id);
             throw new InternalError();
         }
@@ -434,13 +432,13 @@ public class TACGenerator extends MiniJavaBaseVisitor<TACBlock> {
     }
 
     // ------------------------------------------------------------------------
-    
+
     private String genreg() {
         int n = this.regs;
         this.regs++;
         return "r" + n;
     }
-    
+
     private String genlab() {
         // Special case for use of flow control in main():
         if (this.method == null) {
@@ -461,7 +459,7 @@ public class TACGenerator extends MiniJavaBaseVisitor<TACBlock> {
 
         String one = "r1";
         result.add(TACOp.immed(one, 1));
-        
+
         for (Class c : sym.values()) {
             int n = c.getClassIndex();
             String base = "vg" + n;
@@ -481,6 +479,4 @@ public class TACGenerator extends MiniJavaBaseVisitor<TACBlock> {
         return result;
     }
 
-    
 }
-
