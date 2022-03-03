@@ -1,6 +1,7 @@
 package babycino;
 
 import java.util.ArrayList;
+import java.util.function.BinaryOperator;
 
 // Register conventions:
 //
@@ -240,8 +241,53 @@ public class TACGenerator extends MiniJavaBaseVisitor<TACBlock> {
 
             result.setResult(res);
             return result;
-        } else if (op.equals("!=")) { // Feature to add
+        } else if (op.equals("!=")) {
+            /*
+             * != will function by subtracting the two items from each other. For a Boolean,
+             * true = 1 and false = 0.
+             * if the result of the subtraction is 0, then they are equal. Otherwise, they
+             * are not.
+             * As this is a not equal, we will jump to the else block if they are equal.
+             */
 
+            String endOfBlock = this.genlab();
+            String endOfBlock2 = this.genlab();
+
+            // holds the value of expr1
+            String reg1 = this.genreg();
+            // holds the value of expr2
+            String reg2 = this.genreg();
+            // holds the value of reg1 - reg2
+            String reg3 = this.genreg();
+            // The result of the !=. If true, they are not equal
+            String finalRes = this.genreg();
+
+            /*
+             * Subtracts the two values given. As true and false are encoded as 1 and 0, it
+             * will function here too.
+             */
+            result.addAll(expr1);
+            result.addAll(expr2);
+            // Moves the result of expr1 and expr2 into 2 temporary registers
+            result.add(TACOp.mov(reg1, expr1.getResult()));
+            result.add(TACOp.mov(reg2, expr2.getResult()));
+            // subtracts the two registers and stores it in reg3
+            result.add(TACOp.binop(reg3, reg1, reg2, TACOp.binopToCode("-")));
+
+            // if the result is equal to 0, then they are equal.
+            result.add(TACOp.jz(reg3, endOfBlock));
+            result.add(TACOp.immed(finalRes, 1));
+
+            // allows program to jump to false state
+            result.add(TACOp.jmp(endOfBlock2));
+
+            result.add(TACOp.label(endOfBlock));
+            result.add(TACOp.immed(finalRes, 0));
+
+            // allows program to jump to the end
+            result.add(TACOp.label(endOfBlock2));
+            result.setResult(finalRes);
+            return result;
         }
 
         // Generate the correct code for the operation.
