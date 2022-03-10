@@ -6,16 +6,18 @@ class TestBugH2 {
 
 class Test {
 
-    // Iif it check the condition before the execution of the loop, it will output
-    // 10. If the condition is checked after, it will be 9.
+    // If b is false, a typical while loop will never execute, returning 0.
+    // If b is false, a do while will add 1 to x and return 1
 
     public int f() {
+        boolean b;
+        b = false;
         int x;
-        x = 10;
+        x = 0;
 
         do
-            x = x - 1;
-        while (x > 10);
+            x = x + 1;
+        while (b);
 
         return x;
     }
