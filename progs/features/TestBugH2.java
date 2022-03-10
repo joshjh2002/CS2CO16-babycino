@@ -8,6 +8,7 @@ class Test {
 
     // Iif it check the condition before the execution of the loop, it will output
     // 10. If the condition is checked after, it will be 9.
+
     public int f() {
         int x;
         x = 10;
