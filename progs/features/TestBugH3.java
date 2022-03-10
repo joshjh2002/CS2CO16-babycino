@@ -16,9 +16,9 @@ class Test {
         int y;
         y = 0;
 
-        do
+        do {
             y = y + 1;
-        while (x);
+        } while (x);
 
         return y;
     }
